@@ -1,0 +1,57 @@
+services:
+
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/bankdb
+      - SECRET_KEY=supersecretkey
+    expose:
+      - "5000"
+    depends_on:
+      - mongo
+
+  transactions:
+    build:
+      context: ./transactions
+    container_name: transactions
+    environment:
+      - PORT=4000
+    expose:
+      - "4000"
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: ./studentportfolio
+    container_name: frontend
+    expose:
+      - "80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+      - transactions
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
